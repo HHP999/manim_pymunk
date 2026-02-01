@@ -29,7 +29,7 @@ class VConstraint(VGroup):
         "更新器"
         pass
 
-
+# 已检查
 class VPinJoint(VConstraint):
     def __init__(
         self,
@@ -60,7 +60,7 @@ class VPinJoint(VConstraint):
         self.init_distance = distance
         # 检查
         self.__check_data()
-        
+
     def __check_data(self):
         # 1. 首先确保两个物体都不是 None
         if self.a_mob is None or self.b_mob is None:
@@ -140,10 +140,13 @@ class VDampedRotarySpring(VConstraint):
         self,
         a_mob: Mobject,
         b_mob: Mobject,
-        rest_angle: float = 0.0,  # 目标相对角度（弧度）
-        stiffness: float = 100.0,  # 刚度（弹力大小）
-        damping: float = 10.0,  # 阻尼（防止无限晃动）
-        show_indicator: bool = True,  # 是否显示旋转指示器（扇形或弧线）
+        rest_angle: float = 0.0,   # 目标相对角度
+        stiffness: float = 10.0,  # 刚度
+        damping: float = 1.0,    # 阻尼
+        arc_indicator_class: Optional[type] = Arc, 
+        arc_indicator_style: dict = {"radius":0.1, "color": RED, "stroke_width": 4},
+        connect_line_class: Optional[type] = None, 
+        connect_line_style: dict = {"color": YELLOW, "stroke_width": 2},
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -154,10 +157,37 @@ class VDampedRotarySpring(VConstraint):
         self.stiffness = stiffness
         self.damping = damping
 
-        self.show_indicator = show_indicator
-        self.indicator: Optional[Arc] = None
-        self.constraint: Optional[DampedRotarySpring] = None
+        # 样式配置存储
+        self.arc_indicator_class = arc_indicator_class
+        self.arc_indicator_style = arc_indicator_style
+        self.connect_line_class = connect_line_class
+        self.connect_line_style = connect_line_style
 
+        # 视觉组件占位
+        self.arc_a: Optional[VMobject] = None
+        self.arc_b: Optional[VMobject] = None
+        self.conn_line: Optional[VMobject] = None
+        self.constraint: Optional[pymunk.DampedRotarySpring] = None
+        # 检查
+        self.__check_data()
+
+    def __check_data(self):
+        # 1. 首先确保两个物体都不是 None
+        if self.a_mob is None or self.b_mob is None:
+            raise ValueError("Constraints cannot be created without both a_mob and b_mob.")
+
+        # 2. 计算两个物体的中心点距离
+        dist = np.linalg.norm(self.a_mob.get_center() - self.b_mob.get_center())
+
+        # 3. 检查重合情况
+        if dist < 0.000001:
+            # 如果用户明确要求绘制连接线，但在同一点，则报错
+            if self.connect_line_class is not None:
+                raise ValueError(
+                    f"Points {self.a_mob} and {self.b_mob} are at the same location ({dist:.8f}). "
+                    "Connecting them with a line makes no sense."
+                )
+            
     def install(self, space: pymunk.Space):
         """由 SpaceScene 驱动安装"""
         a_body = getattr(self.a_mob, "body", None)
@@ -168,20 +198,25 @@ class VDampedRotarySpring(VConstraint):
                 "VDampedRotarySpring 连接的物体必须先执行 add_dynamic_body"
             )
 
-        # 1. 创建扭转弹簧约束
         self.constraint = DampedRotarySpring(
             a_body, b_body, self.rest_angle, self.stiffness, self.damping
         )
 
-        # 2. 初始化视觉指示器
-        # 扭转弹簧通常在两个物体中心之间画一个圆弧表示扭力
-        if self.show_indicator:
-            self.indicator = Line(
-                self.a_mob.get_center(), self.b_mob.get_center(), color=RED
+        # 初始化连接线
+        if self.connect_line_class:
+            self.conn_line = self.connect_line_class(
+                self.a_mob.get_center(), 
+                self.b_mob.get_center(), 
+                **self.connect_line_style
             )
-            self.add(self.indicator)
-        else:
-            self.indicator = VMobject()
+            self.add(self.conn_line)
+        
+        # 初始化两个弧形指示器
+        if self.arc_indicator_class:
+            # 初始状态设为极小角度，避免渲染错误
+            self.arc_a = self.arc_indicator_class(angle=self.rest_angle, **self.arc_indicator_style)
+            self.arc_b = self.arc_indicator_class(angle=self.rest_angle, **self.arc_indicator_style)
+            self.add(self.arc_a, self.arc_b)
 
         # 3. 注入物理世界
         space.add(self.constraint)
@@ -190,31 +225,46 @@ class VDampedRotarySpring(VConstraint):
         self.add_updater(self.mob_updater)
 
     def mob_updater(self, mob, dt):
-        """同步旋转状态，并用直线粗细表示力道"""
+        """同步旋转状态与视觉表现"""
         if not self.constraint:
             return
+
+        # 获取当前物理状态
         body_a = self.constraint.a
         body_b = self.constraint.b
+        
+        # Manim 坐标转换
+        pos_a = np.array([body_a.position.x, body_a.position.y, 0])
+        pos_b = np.array([body_b.position.x, body_b.position.y, 0])
 
-        # 1. 获取两个物体的当前位置
-        start = np.array([body_a.position.x, body_a.position.y, 0])
-        end = np.array([body_b.position.x, body_b.position.y, 0])
+        # 获取角度差 (b_mob.angle - a_mob.angle)
+        # 注意：Pymunk 使用弧度，Manim 的角度属性通常也是弧度同步的
+        rel_angle = body_a.angle - body_b.angle
+        
+        # 确保 Arc 角度不为 0 以防报错
+        display_angle = rel_angle if abs(rel_angle) > 0.005 else 0.005
 
-        # 2. 计算当前的扭力强度 (Torque Intensity)
-        # 简化计算：只取角度偏差绝对值。如果你想更精确，可以把角速度阻尼也算进去
-        current_angle_diff = body_b.angle - body_a.angle
-        angle_error = abs(current_angle_diff - self.rest_angle)
+        # 1. 更新弧形指示器
+        if self.arc_indicator_class:
+            if self.arc_a:
+                new_arc_a = self.arc_indicator_class(
+          
+                    angle=display_angle, 
+                    **self.arc_indicator_style
+                ).next_to(self.a_mob, UP, buff=0.1)
+                self.arc_a.become(new_arc_a)
+            
+            if self.arc_b:
+                new_arc_b = self.arc_indicator_class(
+          
+                    angle=-display_angle, 
+                    **self.arc_indicator_style
+                ).next_to(self.b_mob, DOWN, buff=0.1)
+                self.arc_b.become(new_arc_b)
 
-        # 映射力道：基础宽度为 2，每增加 1 弧度偏差增加 10 宽度 (可根据 stiffness 调整系数)
-        # 建议使用 log 或 clamp 限制最大宽度，防止视觉崩坏
-        force_width = 2 + angle_error * (self.stiffness / 10.0)
-        force_width = min(force_width, 20)  # 限制最大宽度
-
-        # 3. 更新视觉元素
-        if self.show_indicator:
-            # 更新直线的位置和粗细
-            self.indicator.put_start_and_end_on(start, end)
-            self.indicator.set_stroke(width=force_width)
+        # 2. 更新连接线
+        if self.conn_line:
+            self.conn_line.put_start_and_end_on(pos_a, pos_b)
 
 
 class VDampedSpring(VConstraint):

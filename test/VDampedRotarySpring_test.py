@@ -1,110 +1,70 @@
-from random import choice, randint, random
+from random import choice
 from manim import *
 from manim_pymunk import *
 
+# 获取所有预定义颜色
+COLORS = [getattr(AS2700, item) for item in dir(AS2700) if item.isupper()]
 
-color_values = [getattr(AS2700, item) for item in dir(AS2700) if item.isupper()]
 
 class ConstraintsTest(SpaceScene):
     def construct(self):
-        nums = 3
-        dots_group = VGroup()
-        for i in range(nums):
-            dot = Dot(radius=0.2, color=choice(color_values))
-            anchors = dot.get_anchors()
-            dot.add(Line(dot.get_center(), anchors[-1], color=BLUE))
-            dots_group.add(dot)
-        dots_group.arrange_in_grid(rows=4, buff=0.5).shift(UP * 2)
-        square = Square(side_length=0.4, fill_color=YELLOW, fill_opacity=1)
-        self.add_dynamic_body(*dots_group, square)
-        self.add_static_body(Line(LEFT * 10 + DOWN * 1, RIGHT * 10 + DOWN * 3))
+        # 1. 配置静态地面
+        ground = Line(LEFT * 5 + DOWN * 2, RIGHT * 5 + DOWN * 3)
+        self.add_static_body(ground)
 
-        static_dot = Dot(UP * 3 + LEFT * 3, color=YELLOW)
-        self.add_static_body(static_dot)
+        # 2. 创建并配置动态物体 (小球组)
+        pendulums = VGroup(*[Dot(radius=0.2, color=choice(COLORS)) for _ in range(3)])
 
-        v_pinJoint = VPinJoint(static_dot, dots_group[0], show_line=True)
-        self.add_constraints_body(v_pinJoint)
+        # 给小球添加内部细节（如指针），方便观察旋转
+        for dot in pendulums:
+            indicator = Line(
+                dot.get_center(), dot.get_center() + RIGHT * 0.2, color=BLUE
+            )
+            dot.add(indicator)
 
-        # vDampedRotarySpring = VDampedRotarySpring(
-        #     dots_group[0],
-        #     square,
-        #     rest_angle=0,  #
-        #     stiffness=1000.0,
-        #     damping=1.0,
-        #     show_indicator=True,
-        # )
-        # self.add_constraints_body(vDampedRotarySpring)
+        pendulums.arrange_in_grid(rows=1, buff=1.0)
 
-        # vDampedSpring = VDampedSpring(
-        #     dots_group[0],
-        #     square,
-        #     rest_length=0.5,
-        #     stiffness=10.0,
-        #     damping=1,
-        # )
-        # self.add_constraints_body(vDampedSpring)
+        # 创建一个跟随的小方块
+        falling_square = Square(side_length=0.4, fill_color=YELLOW, fill_opacity=1)
 
-        # vGearJoint = VGearJoint(
-        #     dots_group[0],
-        #     square,
-        #     phase=2,
-        #     ratio=1.0,
-        #     show_indicator=True,
-        # )
-        # self.add_constraints_body(vGearJoint)
+        # 注册动态物体
+        self.add_dynamic_body(*pendulums, falling_square)
 
-        # vGrooveJoint = VGrooveJoint(
-        #     dots_group[0],
-        #     square,
-        #     groove_a=LEFT,
-        #     groove_b=RIGHT,
-        #     anchor_b=ORIGIN,
-        #     groove_color=WHITE,
-        # )
-        # self.add_constraints_body(vGrooveJoint)
+        # 3. 配置静态锚点与约束
+        # 锚点 1：固定在左上方
+        anchor_top = Dot(UP * 3 + LEFT * 3, color=YELLOW)
 
-        # vPivotJoint = VPivotJoint(
-        #     static_dot,
-        #     square,
-        #     # anchor_a=None,
-        #     # anchor_b=None,
-        #     # pivot=None,
-        # )
-        # self.add_constraints_body(vPivotJoint)
+        # 锚点 2：位于第一个小球下方
+        anchor_mid = Dot(color=YELLOW).next_to(pendulums[0], DOWN, buff=0.6)
 
-        # vRatchetJoint = VRatchetJoint(
-        #     static_dot,
-        #     square,
-        #     phase=PI,
-        #     ratchet=PI / 4,
-        #     show_connection=True,
-        # )
-        # self.add_constraints_body(vRatchetJoint)
+        # 连接到锚点 2 的方块
+        box_at_anchor = Square(side_length=1).move_to(anchor_mid).shift(RIGHT*0.5)
 
-        # vRotaryLimitJoint = VRotaryLimitJoint(
-        #     dots_group[0],
-        #     square,
-        #     min_angle=-PI / 4,
-        #     max_angle=PI / 4,
-        #     show_arc=True,
-        # )
-        # self.add_constraints_body(vRotaryLimitJoint)
+        self.add_static_body(anchor_top, anchor_mid)
+        self.add_dynamic_body(box_at_anchor)
 
-        # vSimpleMotor = VSimpleMotor(
-        #     static_dot,
-        #     square,
-        #     rate=-5.0,
-        #     max_torque=100.0,
-        #     show_direction=True,
-        # )
-        # self.add_constraints_body(vSimpleMotor)
-
-        vSlideJoint = VSlideJoint(
-            dots_group[0],
-            square,
-            min_dist=0,
-            max_dist=2,
+        # 4. 创建物理约束 (Joints)
+        # 约束 A：将顶部锚点与第一个小球连接
+        joint_top = VPinJoint(
+            anchor_top,
+            pendulums[0],
+            connect_line_class=Line,
+            connect_line_style={"stroke_width": 2, "color": WHITE},
         )
-        self.add_constraints_body(vSlideJoint)
+
+        # 约束 B：将中间锚点与方块连接
+        spring_mid = VDampedRotarySpring(
+            anchor_mid, box_at_anchor, rest_angle=PI, 
+            stiffness=1, damping=1,
+            connect_line_class= Line
+        )
+
+        joint_mid = VPinJoint(anchor_mid, box_at_anchor)
+
+        # 5. 配置碰撞过滤 (避免锚点与连接物体自撞)
+        self.add_shape_filter(anchor_mid, box_at_anchor, group=2)
+
+        # 6. 将约束添加到物理世界并开跑
+        self.add_constraints_body(spring_mid, joint_top, joint_mid)
 
         self.wait(5)
