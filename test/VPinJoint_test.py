@@ -38,7 +38,7 @@ class ConstraintsTest(SpaceScene):
         anchor_mid = Dot(color=YELLOW).next_to(pendulums[0], DOWN, buff=0.7)
         
         # 连接到锚点 2 的方块
-        box_at_anchor = Square(side_length=1).move_to(anchor_mid)
+        box_at_anchor = Square(side_length=1.2).move_to(anchor_mid)
         
         self.add_static_body(anchor_top, anchor_mid)
         self.add_dynamic_body(box_at_anchor)

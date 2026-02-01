@@ -1,3 +1,4 @@
-from manim_pymunk.PymunkConfig import *
-from manim_pymunk.Constraints import *
-from manim_pymunk.SpaceScene import *
+from manim_pymunk.types import *
+from manim_pymunk.custom_mobjects import *
+from manim_pymunk.constraints import *
+from manim_pymunk.space import *
