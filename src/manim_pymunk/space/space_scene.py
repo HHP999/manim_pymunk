@@ -10,7 +10,7 @@ from manim.mobject.types.vectorized_mobject import VMobject
 from manim_pymunk.types import *
 from manim_pymunk.space import VSpace
 
-class SpaceScene(MovingCameraScene):
+class SpaceScene(ZoomedScene):
     GRAVITY: Tuple[float, float] = 0, -9.81
 
     def __init__(self, renderer=None, **kwargs):
@@ -138,15 +138,15 @@ class SpaceScene(MovingCameraScene):
         else:
             raise "Please add 'mobject' to the space first!"
 
-    def draw_debug_img(self, option: pymunk.matplotlib_util.DrawOptions = None) -> None:
-        if option is None:
-            # --- 绘图与动画 ---
-            draw_options = pymunk.matplotlib_util.DrawOptions(ax)
-            draw_options.flags = (
+    def draw_debug_img(self, option: int = None) -> None:
+        draw_options = pymunk.matplotlib_util.DrawOptions(ax)
+        draw_options.flags = (
                 pymunk.SpaceDebugDrawOptions.DRAW_SHAPES
                 | pymunk.SpaceDebugDrawOptions.DRAW_COLLISION_POINTS
                 # | pymunk.SpaceDebugDrawOptions.DRAW_CONSTRAINTS
             )
+        if option is not None:
+            draw_options.flags = option
 
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.set_xlim(-10, 10)

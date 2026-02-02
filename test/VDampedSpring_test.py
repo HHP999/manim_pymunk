@@ -1,6 +1,7 @@
 from random import choice
 from manim import *
 from manim_pymunk import *
+from numpy import square
 
 # 获取所有预定义颜色
 COLORS = [getattr(AS2700, item) for item in dir(AS2700) if item.isupper()]
@@ -8,13 +9,21 @@ COLORS = [getattr(AS2700, item) for item in dir(AS2700) if item.isupper()]
 
 class ConstraintsTest(SpaceScene):
     def construct(self):
+        self.add(self.camera.frame)
+        self.camera.frame.scale(2)
         # 1. 配置静态地面
-        ground = Line(LEFT * 5 + DOWN * 2, RIGHT * 5 + DOWN * 3)
+        ground = Line(LEFT * 10 + DOWN * 2, RIGHT * 10 + DOWN * 6, stroke_width=30)
         self.add_static_body(ground)
 
         # 2. 创建并配置动态物体 (小球组)
         pendulums = VGroup(*[Dot(radius=0.2, color=choice(COLORS)) for _ in range(3)])
 
+        apple = Apple(
+            stroke_width=10,
+            stroke_color=RED,
+            fill_color=YELLOW,
+            fill_opacity=1,
+        )
         # 给小球添加内部细节（如指针），方便观察旋转
         for dot in pendulums:
             indicator = Line(
@@ -23,12 +32,19 @@ class ConstraintsTest(SpaceScene):
             dot.add(indicator)
 
         pendulums.arrange_in_grid(rows=1, buff=1.0)
-
+        square_hollow = Square(color=YELLOW, stroke_width=10).move_to(pendulums[-1])
         # 创建一个跟随的小方块
-        falling_square = Square(side_length=0.4, fill_color=YELLOW, fill_opacity=1)
+        falling_square = Square(
+            side_length=1,
+            stroke_width=10,
+            stroke_color=RED,
+            fill_color=YELLOW,
+            fill_opacity=1,
+        )
 
         # 注册动态物体
-        self.add_dynamic_body(*pendulums, falling_square)
+        self.add_dynamic_body(*pendulums, falling_square, apple)
+        self.add_dynamic_body(square_hollow, is_solid=False)
 
         # 3. 配置静态锚点与约束
         # 锚点 1：固定在左上方
@@ -38,7 +54,9 @@ class ConstraintsTest(SpaceScene):
         anchor_mid = Dot(color=YELLOW).next_to(anchor_top, DOWN, buff=0.6)
 
         # 连接到锚点 2 的方块
-        box_at_anchor = Square(side_length=1).move_to(anchor_mid).shift(RIGHT * 0.5)
+        box_at_anchor = (
+            Circle(radius=0.5, stroke_width=10).move_to(anchor_mid).shift(RIGHT * 0.5)
+        )
 
         self.add_static_body(anchor_top, anchor_mid)
         self.add_dynamic_body(box_at_anchor)
@@ -56,9 +74,9 @@ class ConstraintsTest(SpaceScene):
             anchor_mid,
             box_at_anchor,
             rest_length=0.5,
-            stiffness=10.0,
-            damping=5,
+            stiffness=1,
+            damping=1,
         )
         self.add_constraints_body(joint_top, vDampedSpring)
 
-        self.wait(6)
+        self.wait(12)

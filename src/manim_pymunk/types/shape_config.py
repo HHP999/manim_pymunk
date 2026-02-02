@@ -26,6 +26,9 @@ class ShapeConfig:
 
     # --- 4. 特殊功能 ---
     # sensor: 如果为 True，只触发碰撞回调，不产生物理碰撞效果（即“穿透”但能感知）
-    is_sensor: bool = False
+    sensor: bool = False
     # surface_velocity: 表面速度，可用于制作传送带效果
     surface_velocity: Tuple[float, float] = (0.0, 0.0)
+
+
+    
