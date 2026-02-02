@@ -32,7 +32,7 @@ def get_normalized_convex_polygons(
         img_resized = img_obj.resize(
             (int(actual_base_width), actual_base_height), Image.Resampling.LANCZOS
         )
-        mask_np = np.where(np.array(img_resized) > 32, 255, 0).astype(np.uint8)
+        mask_np = np.where(np.array(img_resized) > 128, 255, 0).astype(np.uint8)
     else:
         # --- 路径 B: 实色背景处理 (保留你原有的对比度拉伸逻辑) ---
         img_rgb = Image.fromarray(pixel_array[:, :, :3].astype("uint8")).convert("L")

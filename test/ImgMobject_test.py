@@ -11,6 +11,14 @@ class ConstraintsTest(SpaceScene):
             "ak47.png",
             "awm.png",
             "bullts.png",
+            "bullts.png",
+            "bullts.png",
+            "bullts.png",
+            "bullts.png",
+            "bullts.png",
+            "bullts.png",
+            "bullts.png",
+            "bullts.png",
             "football.png",
             "github.png",
             "trislof.png",
@@ -19,7 +27,7 @@ class ConstraintsTest(SpaceScene):
         img_group = Group()
         for img in imgs_filenames:
             img_group.add(ImageMobject(filename_or_array=fr"./assets/{img}"))
-        img_group.arrange(RIGHT).scale(2)
+        img_group.arrange(UP).shift(UP*10)
         self.add_dynamic_body(*img_group)
         # 1. 配置静态地面
         ground = Line(LEFT * 30 + DOWN * 2, RIGHT * 30 + DOWN * 6, stroke_width=20)
@@ -88,6 +96,8 @@ class ConstraintsTest(SpaceScene):
             damping=1,
         )
         self.add_constraints_body(joint_top, vDampedSpring)
-        self.wait(3)
-        self.play(self.camera.frame.animate.shift(RIGHT * 3), run_time=3)
-        # self.draw_debug_img()
+        # self.wait(3)
+        # self.play(self.camera.frame.animate.shift(RIGHT * 3), run_time=3)
+        # self.wait(3)
+        # self.play(self.camera.frame.animate.scale(2), run_time=3)
+        self.draw_debug_img(xlim=(-12,12), ylim=(-6,6))

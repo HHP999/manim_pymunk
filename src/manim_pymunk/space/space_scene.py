@@ -131,7 +131,7 @@ class SpaceScene(ZoomedScene):
         else:
             raise "Please add 'mobject' to the space first!"
 
-    def draw_debug_img(self, option: int = None) -> None:
+    def draw_debug_img(self, option: int = None, xlim=(-8, 8), ylim=(-5, 5)) -> None:
         import matplotlib.pyplot as plt
         import pymunk.matplotlib_util
         # 强制开启交互窗口后台（如果是在非交互脚本中运行）
@@ -140,8 +140,8 @@ class SpaceScene(ZoomedScene):
         matplotlib.use('TkAgg') 
 
         fig, ax = plt.subplots(figsize=(6, 6))
-        ax.set_xlim(-8, 8)
-        ax.set_ylim(-5, 5)
+        ax.set_xlim(*xlim)
+        ax.set_ylim(*ylim)
         ax.set_aspect('equal')
         
         # 坐标轴范围建议根据你的图像尺寸动态设置
