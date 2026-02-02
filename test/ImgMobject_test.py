@@ -1,22 +1,32 @@
-from random import choice
 from manim import *
 from manim_pymunk import *
-from numpy import square
-
-# 获取所有预定义颜色
-COLORS = [getattr(AS2700, item) for item in dir(AS2700) if item.isupper()]
 
 
 class ConstraintsTest(SpaceScene):
     def construct(self):
         self.add(self.camera.frame)
         self.camera.frame.scale(2)
+
+        imgs_filenames = [
+            "ak47.png",
+            "awm.png",
+            "bullts.png",
+            "football.png",
+            "github.png",
+            "trislof.png",
+        ]
+
+        img_group = Group()
+        for img in imgs_filenames:
+            img_group.add(ImageMobject(filename_or_array=fr"./assets/{img}"))
+        img_group.arrange(RIGHT).scale(2)
+        self.add_dynamic_body(*img_group)
         # 1. 配置静态地面
-        ground = Line(LEFT * 10 + DOWN * 2, RIGHT * 10 + DOWN * 6, stroke_width=30)
+        ground = Line(LEFT * 30 + DOWN * 2, RIGHT * 30 + DOWN * 6, stroke_width=20)
         self.add_static_body(ground)
 
         # 2. 创建并配置动态物体 (小球组)
-        pendulums = VGroup(*[Dot(radius=0.2, color=choice(COLORS)) for _ in range(3)])
+        pendulums = VGroup(*[Dot(radius=0.2) for _ in range(10)])
 
         apple = Apple(
             stroke_width=10,
@@ -78,8 +88,6 @@ class ConstraintsTest(SpaceScene):
             damping=1,
         )
         self.add_constraints_body(joint_top, vDampedSpring)
-        img = ImageMobject(filename_or_array=r"bullts.png").scale(0.5).shift(LEFT * 2)
-        self.add_dynamic_body(img)
         self.wait(3)
-        # print(len(img.shapes)) # 63
+        self.play(self.camera.frame.animate.shift(RIGHT * 3), run_time=3)
         # self.draw_debug_img()

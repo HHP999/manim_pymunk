@@ -1,7 +1,6 @@
 from manim import *
 import pymunk
-import matplotlib.pyplot as plt
-import pymunk.matplotlib_util
+
 
 from typing import Tuple
 from manim.mobject.mobject import Mobject
@@ -57,9 +56,6 @@ class SpaceScene(ZoomedScene):
     def add_dynamic_body(
         self,
         *mobs: Mobject,
-        elasticity: float = 0.8,
-        density: float = 1,  # 使用密度自动计算质量
-        friction: float = 0.8,
         family_members=False,
         is_solid: bool = True,
     ):
@@ -79,9 +75,6 @@ class SpaceScene(ZoomedScene):
     def add_kinematic_body(
         self,
         *mobs: Mobject,
-        elasticity: float = 0.8,
-        density: float = 1,  # 使用密度自动计算质量
-        friction: float = 0.8,
         family_members=False,
     ):
         self.add(*mobs)
@@ -139,18 +132,33 @@ class SpaceScene(ZoomedScene):
             raise "Please add 'mobject' to the space first!"
 
     def draw_debug_img(self, option: int = None) -> None:
+        import matplotlib.pyplot as plt
+        import pymunk.matplotlib_util
+        # 强制开启交互窗口后台（如果是在非交互脚本中运行）
+        # 如果你是用的是终端运行，建议使用 TkAgg 或 Qt5Agg
+        import matplotlib
+        matplotlib.use('TkAgg') 
+
+        fig, ax = plt.subplots(figsize=(6, 6))
+        ax.set_xlim(-8, 8)
+        ax.set_ylim(-5, 5)
+        ax.set_aspect('equal')
+        
+        # 坐标轴范围建议根据你的图像尺寸动态设置
+        # 如果 self.width 和 self.height 存在：
+        # ax.set_xlim(0, self.width)
+        # ax.set_ylim(self.height, 0) # 翻转 Y 轴以匹配图像坐标
+
         draw_options = pymunk.matplotlib_util.DrawOptions(ax)
-        draw_options.flags = (
-                pymunk.SpaceDebugDrawOptions.DRAW_SHAPES
-                | pymunk.SpaceDebugDrawOptions.DRAW_COLLISION_POINTS
-                # | pymunk.SpaceDebugDrawOptions.DRAW_CONSTRAINTS
-            )
         if option is not None:
             draw_options.flags = option
+        else:
+            draw_options.flags = (
+                pymunk.SpaceDebugDrawOptions.DRAW_SHAPES
+                | pymunk.SpaceDebugDrawOptions.DRAW_COLLISION_POINTS
+            )
 
-        fig, ax = plt.subplots(figsize=(10, 6))
-        ax.set_xlim(-10, 10)
-        ax.set_ylim(-5, 5)
-        ax.set_aspect("equal")
         self.vspace.space.debug_draw(draw_options)
-        fig.show()
+        
+        # block=True 会阻塞程序直到你手动关闭窗口
+        plt.show(block=True)

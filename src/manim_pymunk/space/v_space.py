@@ -10,6 +10,8 @@ from manim.mobject.geometry.line import Line
 from manim.mobject.mobject import Mobject
 from manim.mobject.types.vectorized_mobject import VMobject
 from manim.utils.bezier import subdivide_bezier
+from pymunk.autogeometry import march_soft, convex_decomposition
+from manim_pymunk.utils.img_tools import get_normalized_convex_polygons
 
 from manim_pymunk.types import *
 
@@ -269,14 +271,26 @@ class VSpace(Mobject, metaclass=ConvertToOpenGL):
 
     # =============================== shape 相关 ==================================
     # 添加shapes
-    def __set_shape(self, mob: VMobject, is_solid: bool = True) -> None:
+    def __set_shape(self, mob: Mobject, is_solid: bool = True) -> None:
         if not hasattr(mob, "shapes"):
             mob.set(shapes=[])
+
         # 圆形，多边形，线条
-        if is_solid:
+        if isinstance(mob, ImageMobject):
+            # 图片
+            self.get_img_shape(mob)
+        elif is_solid:
+            # 实心
             self.get_solid_shape(mob)
         else:
+            # 空心
             self.get_hollow_shape(mob)
+
+        #  配置属性
+        for shape in mob.shapes:
+            shape.density = 1
+            shape.elasticity = 0.8
+            shape.friction = 0.8
 
     def get_solid_shape(self, mob: VMobject) -> None:
         stroke_width = (mob.stroke_width / 100) * (
@@ -330,12 +344,6 @@ class VSpace(Mobject, metaclass=ConvertToOpenGL):
                         pymunk.Poly(mob.body, hull_verts, radius=stroke_width / 2)
                     )
 
-        # 4. 配置属性
-        for shape in mob.shapes:
-            shape.density = 1
-            shape.elasticity = 0.8
-            shape.friction = 0.8
-
     # 绘制空心形状, 使用  Segment 圈
     def get_hollow_shape(self, mob: VMobject, n_divisions: int = 4) -> None:
         stroke_width = (mob.stroke_width / 100) * (
@@ -363,12 +371,29 @@ class VSpace(Mobject, metaclass=ConvertToOpenGL):
             seg = pymunk.Segment(
                 mob.body, (p1[0], p1[1]), (p2[0], p2[1]), radius=stroke_width / 2
             )
-
-            # 配置物理属性
-            seg.density = 1
-            seg.elasticity = 0.8
-            seg.friction = 0.8
             mob.shapes.append(seg)
+
+    # 图片
+    def get_img_shape(self, mob: ImageMobject) -> None:
+        pixel_array = mob.pixel_array
+        manim_w, manim_h = mob.width, mob.height
+        polygons = get_normalized_convex_polygons(
+            pixel_array,
+            base_width=512.0,
+            target_cell_size=4,
+            frame_w=manim_w,
+            frame_h=manim_h,
+        )
+        # 不为空则创建精细
+        if polygons:
+            # 根据 polygons 生成多边形
+            for poly_verts in polygons:
+                # poly_verts 已经是原图比例下的坐标列表
+                mob.shapes.append(pymunk.Poly(mob.body, poly_verts, radius=0.1))
+        else:
+            mob.shapes = [
+                pymunk.Poly.create_box(mob.body, size=(manim_w, manim_h), radius=0.1)
+            ]
 
     # 曲线细分
     @staticmethod
@@ -455,7 +480,6 @@ class VSpace(Mobject, metaclass=ConvertToOpenGL):
     def get_point_query_info(mob, point=[0, 0, 0]):
         """
         get_point_query_info 的 Docstring
-
         :param mob: 说明
         :param point: 说明
         distance:与形状的最近距离，点在形状内，距离为负数

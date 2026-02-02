@@ -48,3 +48,4 @@ def get_moment_for_line(
     stroke_width: float,
 ) -> float:
     return moment_for_segment(mass=mass, a=start, b=end, radius=stroke_width)
+
