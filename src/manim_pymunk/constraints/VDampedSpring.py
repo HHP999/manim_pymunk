@@ -6,7 +6,7 @@ from pymunk import Space
 from pymunk.constraints import DampedSpring
 from manim import *
 from manim_pymunk.constraints import VConstraint
-
+# 已测试
 class VDampedSpring(VConstraint):
     def __init__(
         self,

@@ -1,10 +1,12 @@
 from typing import Optional
 from pymunk.constraints import GrooveJoint
-
+ 
 from manim import *
 from manim_pymunk.constraints import VConstraint
 from pymunk import Space
 
+
+# a 上的滑轨，b 在滑轨运动
 class VGrooveJoint(VConstraint):
     def __init__(
         self,
@@ -13,7 +15,8 @@ class VGrooveJoint(VConstraint):
         groove_a: np.ndarray = LEFT,
         groove_b: np.ndarray = RIGHT,
         anchor_b: np.ndarray = ORIGIN,
-        groove_color: ManimColor = WHITE,
+
+        groove_color: ManimColor = GREEN,
         pivot_appearance: Mobject = Dot(color=YELLOW),
         show_groove: bool = True,
         **kwargs,

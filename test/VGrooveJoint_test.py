@@ -1,112 +1,41 @@
-from random import choice, randint, random
 from manim import *
 from manim_pymunk import *
 
 
-color_values = [getattr(AS2700, item) for item in dir(AS2700) if item.isupper()]
-
-
-
 class ConstraintsTest(SpaceScene):
     def construct(self):
-        nums = 3
-        dots_group = VGroup()
-        for i in range(nums):
-            dot = Dot(radius=0.2, color=choice(color_values))
-            anchors = dot.get_anchors()
-            dot.add(Line(dot.get_center(), anchors[-1], color=BLUE))
-            dots_group.add(dot)
-        dots_group.arrange_in_grid(rows=4, buff=0.5).shift(UP * 2)
-        square = Square(side_length=0.4, fill_color=YELLOW, fill_opacity=1)
-        self.add_dynamic_body(*dots_group, square)
-        self.add_static_body(Line(LEFT * 10 + DOWN * 1, RIGHT * 10 + DOWN * 3))
+        # 1. 两个固定参考点
+        center_dot = Dot(UP * 2 + RIGHT * 2)
+        fixed_dot = Dot(UP * 0.5 + LEFT * 2, color=RED)
+        # 2. 轮子 (Wheel) - 动态
+        wheel = Circle(radius=0.6, fill_opacity=1, fill_color=RED).move_to(center_dot)
+        groove_line = Line(fixed_dot.get_center(), RIGHT * 5 )
+        rod = Line(wheel.get_top(), groove_line.get_end(), color=YELLOW)
 
-        static_dot = Dot(UP * 3 + LEFT * 3, color=YELLOW)
-        self.add_static_body(static_dot)
+        self.add_dynamic_body(wheel, groove_line, rod)
+        self.add_static_body(center_dot, fixed_dot)
+        wheel.body.angular_velocity = 6
 
-        v_pinJoint = VPinJoint(static_dot, dots_group[0], show_line=True)
-        self.add_constraints_body(v_pinJoint)
-
-        # vDampedRotarySpring = VDampedRotarySpring(
-        #     dots_group[0],
-        #     square,
-        #     rest_angle=0,  #
-        #     stiffness=1000.0,
-        #     damping=1.0,
-        #     show_indicator=True,
-        # )
-        # self.add_constraints_body(vDampedRotarySpring)
-
-        # vDampedSpring = VDampedSpring(
-        #     dots_group[0],
-        #     square,
-        #     rest_length=0.5,
-        #     stiffness=10.0,
-        #     damping=1,
-        # )
-        # self.add_constraints_body(vDampedSpring)
-
-        # vGearJoint = VGearJoint(
-        #     dots_group[0],
-        #     square,
-        #     phase=2,
-        #     ratio=1.0,
-        #     show_indicator=True,
-        # )
-        # self.add_constraints_body(vGearJoint)
-
-        # vGrooveJoint = VGrooveJoint(
-        #     dots_group[0],
-        #     square,
-        #     groove_a=LEFT,
-        #     groove_b=RIGHT,
-        #     anchor_b=ORIGIN,
-        #     groove_color=WHITE,
-        # )
-        # self.add_constraints_body(vGrooveJoint)
-
-        # vPivotJoint = VPivotJoint(
-        #     static_dot,
-        #     square,
-        #     # anchor_a=None,
-        #     # anchor_b=None,
-        #     # pivot=None,
-        # )
-        # self.add_constraints_body(vPivotJoint)
-
-        # vRatchetJoint = VRatchetJoint(
-        #     static_dot,
-        #     square,
-        #     phase=PI,
-        #     ratchet=PI / 4,
-        #     show_connection=True,
-        # )
-        # self.add_constraints_body(vRatchetJoint)
-
-        # vRotaryLimitJoint = VRotaryLimitJoint(
-        #     dots_group[0],
-        #     square,
-        #     min_angle=-PI / 4,
-        #     max_angle=PI / 4,
-        #     show_arc=True,
-        # )
-        # self.add_constraints_body(vRotaryLimitJoint)
-
-        # vSimpleMotor = VSimpleMotor(
-        #     static_dot,
-        #     square,
-        #     rate=-5.0,
-        #     max_torque=100.0,
-        #     show_direction=True,
-        # )
-        # self.add_constraints_body(vSimpleMotor)
-
-        vSlideJoint = VSlideJoint(
-            dots_group[0],
-            square,
-            min_dist=0,
-            max_dist=2,
+        # 钉住轮子中心并给动力
+        wheel_pivot = VPivotJoint(center_dot, wheel, pivot=center_dot.get_center())
+        # 关键修改：用 PivotJoint 把滑轨的左端钉在固定点上
+        groove_hinge = VPivotJoint(fixed_dot, groove_line, pivot=fixed_dot.get_center())
+        # 5. 建立连接关节
+        # 关节 A: 连杆一端钉在轮子边缘
+        vPivot_rod_wheel = VPivotJoint(wheel, rod, pivot=wheel.get_top())
+        # 关节 B: 连杆另一端在“会摆动的滑轨”上滑动
+        # 注意：groove_a/b 是相对于 groove_line 质心的局部坐标
+        vGroove = VGrooveJoint(
+            groove_line,
+            rod,
+            groove_a=groove_line.get_start() - groove_line.get_center(),
+            groove_b=groove_line.get_end() - groove_line.get_center(),
+            anchor_b=rod.get_end() - rod.get_center(),
         )
-        self.add_constraints_body(vSlideJoint)
+        # 6. 过滤碰撞，防止组件互相弹飞
+        self.add_shape_filter(center_dot, wheel, rod, groove_line, group=3)
+        # 添加所有约束
+        self.add_constraints_body(wheel_pivot, groove_hinge, vPivot_rod_wheel, vGroove)
 
-        self.wait(5)
+        self.wait(6)
+        # self.draw_debug_img()

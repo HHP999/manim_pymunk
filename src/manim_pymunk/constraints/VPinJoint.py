@@ -5,14 +5,15 @@ from manim_pymunk.constraints import VConstraint
 from pymunk.constraints import PinJoint
 
 from pymunk import Space
-# 已检查
+
+# 已测试
 class VPinJoint(VConstraint):
     def __init__(
         self,
         a_mob: Mobject,
         b_mob: Mobject,
-        anchor_a: np.ndarray = ORIGIN,  # 以a_mob为坐标的局部坐标锚点
-        anchor_b: np.ndarray = ORIGIN,
+        anchor_a: list = ORIGIN,  # 以a_mob为坐标的局部坐标锚点
+        anchor_b: list = ORIGIN,
         distance: Optional[float] = None,  # 手动配置距离
         mob_a_appearance: Mobject = Dot(color=RED),  # 锚点样式
         mob_b_appearance: Mobject = Dot(color=RED),  # 锚点样式

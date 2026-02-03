@@ -4,14 +4,16 @@ from manim_pymunk.constraints import VConstraint
 from pymunk.constraints  import PivotJoint
 from pymunk import Space
 
+# 已测试
+# 一颗钉子，定位二选一
 class VPivotJoint(VConstraint):
     def __init__(
         self,
         a_mob: Mobject,
         b_mob: Mobject,
-        anchor_a: Optional[np.ndarray] = None,
-        anchor_b: Optional[np.ndarray] = None,
-        pivot: Optional[np.ndarray] = None,
+        pivot: list = None, # 世界定位 2
+        anchor_a: list = None, # 锚点定位 1
+        anchor_b: list = None, # 锚点定位 1
         pivot_appearance: Mobject = Dot(color=WHITE, radius=0.05),
         **kwargs,
     ):
@@ -38,7 +40,7 @@ class VPivotJoint(VConstraint):
             raise ValueError("VPivotJoint connected objects must have Pymunk bodies.")
 
         # 1. Create Pymunk PivotJoint based on provided arguments
-        if self.pivot_world is not None:
+        if self.pivot_world:
             # Init via world coordinates
             self.constraint = PivotJoint(a_body, b_body, self.pivot_world)
         elif self.anchor_a_local is not None and self.anchor_b_local is not None:
