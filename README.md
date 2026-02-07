@@ -2,14 +2,11 @@
 
 **Manim Pymunk** 是一个将 Pymunk 物理引擎与 Manim 动画库集成的项目。
 
-
-
 ### 示例演示
 
-<video src="https://github.com/你的用户名/仓库名/raw/main/src/manim_pymunk/examples/assets/example.mp4" width="600" controls muted autoplay loop>
+<video src="https://github.com/HHP999/manim_pymunk/raw/master/examples/assets/example.mp4" width="600" controls muted autoplay loop>
   您的浏览器不支持视频播放。
 </video>
-
 
 ## 项目特点
 
@@ -216,12 +213,12 @@ space._collision_detection_handler(
 
 本项目使用 AI 辅助开发，目前还有多个功能未完成：
 
-- [ ]  项目结构重构
-- [ ]  API 优化和简化
-- [ ]  使用 `@dataclass` 整合参数
-- [ ]  完整的 Pymunk API 封装
-- [ ]  完整的使用示例库
-- [ ]  详细的教程文档
+- [ ] 项目结构重构
+- [ ] API 优化和简化
+- [ ] 使用 `@dataclass` 整合参数
+- [ ] 完整的 Pymunk API 封装
+- [ ] 完整的使用示例库
+- [ ] 详细的教程文档
 
 ## 安装
 
