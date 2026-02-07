@@ -69,7 +69,6 @@ API 参考
    :caption: API Reference:
 
    manim_pymunk
-   examples
 
 索引
 ----
