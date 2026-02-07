@@ -1,6 +1,9 @@
 from manim import *
 from manim_pymunk import *
+from pathlib import Path
 
+# 获取当前文件所在目录的绝对路径
+LIB_DIR = Path(__file__).parent
 
 class ConstraintsTest(SpaceScene):
     def construct(self):

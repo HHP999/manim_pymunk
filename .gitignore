@@ -7,6 +7,8 @@ wheels/
 *.egg-info
 *.mp4
 media/
+_build/
+generated/
 # Virtual environments
 .venv
 

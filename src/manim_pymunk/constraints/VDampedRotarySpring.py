@@ -1,3 +1,8 @@
+"""阻尼旋转弹簧约束模块。
+
+该模块实现VDampedRotarySpring类，用于在两个刚体之间创建旋转弹簧约束，
+提供一个目标相对角度，通过弹簧力和阻尼力维持该角度。
+"""
 
 from manim import *
 from typing import Optional
@@ -5,21 +10,49 @@ from manim_pymunk.constraints import VConstraint
 from pymunk import Space
 from pymunk.constraints import DampedRotarySpring
 
-# 已测试
+
 class VDampedRotarySpring(VConstraint):
+    """两个刚体之间的阻尼旋转弹簧约束。
+    
+    VDampedRotarySpring在两个刚体之间创建一个旋转弹簧连接。当实际相对角度
+    偏离目标角度时，弹簧转矩将其拉回；阻尼转矩则衰减振荡。
+    
+    Attributes:
+        a_mob (Mobject): 第一个连接的Mobject对象。
+        b_mob (Mobject): 第二个连接的Mobject对象。
+        rest_angle (float): 目标相对旋转角（弧度）。
+        stiffness (float): 旋转弹簧的刚度系数。
+        damping (float): 旋转阻尼系数。
+        constraint (pymunk.DampedRotarySpring): 底层Pymunk约束对象。
+    """
+
     def __init__(
         self,
         a_mob: Mobject,
         b_mob: Mobject,
-        rest_angle: float = 0.0,  # 目标相对角度
-        stiffness: float = 10.0,  # 刚度
-        damping: float = 1.0,  # 阻尼
+        rest_angle: float = 0.0,
+        stiffness: float = 10.0,
+        damping: float = 1.0,
         arc_indicator_class: Optional[type] = Arc,
         arc_indicator_style: dict = {"radius": 0.1, "color": RED, "stroke_width": 4},
         connect_line_class: Optional[type] = None,
         connect_line_style: dict = {"color": YELLOW, "stroke_width": 2},
         **kwargs,
     ):
+        """初始化阻尼旋转弹簧约束。
+        
+        Args:
+            a_mob (Mobject): 第一个连接的Mobject对象。
+            b_mob (Mobject): 第二个连接的Mobject对象。
+            rest_angle (float, optional): 目标相对角度，默认为0.0。
+            stiffness (float, optional): 旋转弹簧刚度，默认为10.0。
+            damping (float, optional): 旋转阻尼系数，默认为1.0。
+            arc_indicator_class (Optional[type], optional): 弧形指示器的类型，默认为Arc。
+            arc_indicator_style (dict, optional): 弧形指示器的样式配置。
+            connect_line_class (Optional[type], optional): 连接线的类型，默认为None。
+            connect_line_style (dict, optional): 连接线的样式配置。
+            **kwargs: 传递给父类VConstraint的其他参数。
+        """
         super().__init__(**kwargs)
         self.a_mob = a_mob
         self.b_mob = b_mob
@@ -38,23 +71,25 @@ class VDampedRotarySpring(VConstraint):
         self.arc_a: Optional[VMobject] = None
         self.arc_b: Optional[VMobject] = None
         self.conn_line: Optional[VMobject] = None
-        self.constraint: Optional[pymunk.DampedRotarySpring] = None
-        # 检查
+        self.constraint: Optional[DampedRotarySpring] = None
         self.__check_data()
 
     def __check_data(self):
-        # 1. 首先确保两个物体都不是 None
+        """验证约束参数的合法性。
+        
+        检查两个Mobject是否为None以及是否在同一位置。
+        
+        Raises:
+            ValueError: 如果两个Mobject为None或位置重合且需要绘制连接线。
+        """
         if self.a_mob is None or self.b_mob is None:
             raise ValueError(
                 "Constraints cannot be created without both a_mob and b_mob."
             )
 
-        # 2. 计算两个物体的中心点距离
         dist = np.linalg.norm(self.a_mob.get_center() - self.b_mob.get_center())
 
-        # 3. 检查重合情况
         if dist < 0.000001:
-            # 如果用户明确要求绘制连接线，但在同一点，则报错
             if self.connect_line_class is not None:
                 raise ValueError(
                     f"Points {self.a_mob} and {self.b_mob} are at the same location ({dist:.8f}). "
@@ -62,7 +97,14 @@ class VDampedRotarySpring(VConstraint):
                 )
 
     def install(self, space: Space):
-        """由 SpaceScene 驱动安装"""
+        """安装旋转弹簧约束并初始化视觉组件。
+        
+        Args:
+            space (pymunk.Space): 目标物理空间对象。
+        
+        Raises:
+            ValueError: 如果连接的Mobject没有body属性。
+        """
         a_body = getattr(self.a_mob, "body", None)
         b_body = getattr(self.b_mob, "body", None)
 
@@ -86,7 +128,6 @@ class VDampedRotarySpring(VConstraint):
 
         # 初始化两个弧形指示器
         if self.arc_indicator_class:
-            # 初始状态设为极小角度，避免渲染错误
             self.arc_a = self.arc_indicator_class(
                 angle=self.rest_angle, **self.arc_indicator_style
             )
@@ -102,14 +143,23 @@ class VDampedRotarySpring(VConstraint):
         self.add_updater(self.mob_updater)
 
     def mob_updater(self, mob, dt):
-        """同步旋转状态与视觉表现：实现对角对称"""
+        """实时同步旋转状态与视觉表现。
+        
+        根据两个刚体的实时位置和旋转角度，更新弧形指示器和连接线。
+        
+        Args:
+            mob (Mobject): 约束对象本身。
+            dt (float): 帧时间增量（秒）。
+        """
         if not self.constraint:
             return
+        
         # 直线更新
         if self.conn_line:
             self.conn_line.put_start_and_end_on(
                 self.a_mob.get_center(), self.b_mob.get_center()
             )
+            
         # 1. 获取物理状态
         body_a = self.constraint.a
         body_b = self.constraint.b
@@ -142,22 +192,17 @@ class VDampedRotarySpring(VConstraint):
             )
             target_pos_a = pos_a - unit_vec * (self.a_mob.get_width() / 2 + buff)
             new_arc_a.move_to(target_pos_a)
-
-            # 微调旋转：连线角度 - 弧度的一半，使弧线中点落在直线上
             new_arc_a.rotate(
                 line_angle - display_angle / 2 + PI, about_point=target_pos_a
             )
             self.arc_a.become(new_arc_a)
 
         if self.arc_b:
-            # 为了对称，b 处的弧度使用相反方向
             new_arc_b = self.arc_indicator_class(
                 angle=-display_angle, **self.arc_indicator_style
             )
             target_pos_b = pos_b + unit_vec * (self.b_mob.get_width() / 2 + buff)
             new_arc_b.move_to(target_pos_b)
-
-            # 微调旋转：连线角度 - 弧度的一半 (注意此时 display_angle 是负的，依然适用)
             new_arc_b.rotate(
                 line_angle - (-display_angle) / 2, about_point=target_pos_b
             )

@@ -1,11 +1,11 @@
 [project]
 name = "manim-pymunk"
-version = "0.1.0"
+version = "0.0.1"
 description = "A simple Pymunk Visualization Package"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [
-    { name = "Your Name", email = "your.email@example.com" }
+    { name = "CoreKSets", email = "passlink.jack@gmail.com" }
 ]
 dependencies = [
     "pymunk>=6.0.0",
@@ -20,7 +20,19 @@ dependencies = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/manim_pymunk"]
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "src/manim_pymunk/**/*.png",
+    "src/manim_pymunk/**/*.jpg",
+    "src/manim_pymunk/**/*.cfg",
+]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[project.urls]
+Homepage = "https://github.com/HHP999/manim_pymunk"
+Issues = "https://github.com/HHP999/manim_pymunk/issues"
+Repository = "https://github.com/HHP999/manim_pymunk.git"
