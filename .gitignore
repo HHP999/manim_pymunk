@@ -5,7 +5,7 @@ build/
 dist/
 wheels/
 *.egg-info
-*.mp4
+!manim_pymunk/examples/assets/*
 media/
 _build/
 generated/
