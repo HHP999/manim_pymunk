@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.abspath('../src'))
 project = "manim-pymunk"
 copyright = "2026, CoreKSets"
 author = "CoreKSets"
-release = "v0.1.0"
+release = "v1.0.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

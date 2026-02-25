@@ -35,7 +35,7 @@ class ConstraintsTest(SpaceScene):
             anchor_b=ORIGIN,
         )
 
-        self.add_shape_filter(dot1, dot2, static_anchor_square, group=2)
+        self.add_shapes_filter(dot1, dot2, static_anchor_square, group=2)
 
         vGearJoint = VGearJoint(
             dot1,
@@ -44,7 +44,7 @@ class ConstraintsTest(SpaceScene):
             ratio=10.0,
         )
         dot1.body.angular_velocity = 2 * PI  # 弧度/秒
-        self.add_constraints_body(
+        self.add_constraints(
             vPivotJoint, vPivotJoint2, vPinJoint_static_anchor_square, vGearJoint
         )
         self.draw_debug_img()

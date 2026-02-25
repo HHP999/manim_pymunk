@@ -41,9 +41,9 @@ class ConstraintsTest(SpaceScene):
             anchor_b=ORIGIN,
         )
 
-        self.add_shape_filter(dot1,dot2, static_anchor_square, group=2)
+        self.add_shapes_filter(dot1,dot2, static_anchor_square, group=2)
 
-        self.add_constraints_body(
+        self.add_constraints(
             vPivotJoint, vPivotJoint2, vPinJoint_static_anchor_square
         )
         self.wait(6)

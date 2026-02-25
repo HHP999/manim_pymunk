@@ -14,7 +14,7 @@ class ConstraintsTest(SpaceScene):
         # 2. 物理初始化
         self.add_static_body(anchor)
         self.add_dynamic_body(bob, weight)
-        self.add_shape_filter(anchor, bob, weight, group=1)
+        self.add_shapes_filter(anchor, bob, weight, group=1)
 
         # 3. 创建 VSlideJoint (核心演示)
         # 允许距离在 0.5 到 3.0 之间自由滑动
@@ -29,7 +29,7 @@ class ConstraintsTest(SpaceScene):
         pin = VPinJoint(bob, weight, color=YELLOW, connect_line_class=Line)
 
         # 5. 添加约束
-        self.add_constraints_body(slide, pin)
+        self.add_constraints(slide, pin)
 
         # 6. 【关键】给一个水平冲量，让它摆动起来
         # 如果只是垂直掉落，视觉效果很死板

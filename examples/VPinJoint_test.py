@@ -59,9 +59,9 @@ class ConstraintsTest(SpaceScene):
         )
 
         # 5. 配置碰撞过滤 (避免锚点与连接物体自撞)
-        self.add_shape_filter(anchor_mid, box_at_anchor, group=2)
+        self.add_shapes_filter(anchor_mid, box_at_anchor, group=2)
 
         # 6. 将约束添加到物理世界并开跑
-        self.add_constraints_body(joint_top, joint_mid)
+        self.add_constraints(joint_top, joint_mid)
 
         self.wait(5)

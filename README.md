@@ -7,7 +7,6 @@
 <video src="https://github.com/HHP999/manim_pymunk/raw/master/examples/assets/example.mp4" width="600" controls muted autoplay loop>
   您的浏览器不支持视频播放。
 </video>
-
 ## 项目特点
 
 本项目提供了以下核心功能：

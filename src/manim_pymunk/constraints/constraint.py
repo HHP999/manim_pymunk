@@ -25,6 +25,7 @@ class VConstraint(VGroup):
             **kwargs: 传递给父类VGroup的其他参数。
         """
         super().__init__(**kwargs)
+        self.__check_data()
 
     def __check_data(self):
         """检查约束数据的有效性。

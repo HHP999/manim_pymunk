@@ -77,7 +77,7 @@ class ConstraintsTest(SpaceScene):
             stiffness=1,
             damping=1,
         )
-        self.add_constraints_body(joint_top, vDampedSpring)
+        self.add_constraints(joint_top, vDampedSpring)
         img = ImageMobject(filename_or_array=r"bullts.png").scale(0.5).shift(LEFT * 2)
         self.add_dynamic_body(img)
         self.wait(3)

@@ -20,7 +20,7 @@ class ConstraintsTest(SpaceScene):
 
         role_dot.body.angular_velocity = 6
         role_dot2.body.angular_velocity = -6
-        self.add_shape_filter(center_dot, role_dot, role_dot2, group=3)
+        self.add_shapes_filter(center_dot, role_dot, role_dot2, group=3)
 
         role_pin = VPivotJoint(center_dot, role_dot, pivot=center_dot.get_center())
 
@@ -35,7 +35,7 @@ class ConstraintsTest(SpaceScene):
         )
 
         # 2. 添加约束
-        self.add_constraints_body(role_pin, role_pin2, vRotaryLimitJoint)
+        self.add_constraints(role_pin, role_pin2, vRotaryLimitJoint)
 
         self.wait(6)
         # self.draw_debug_img()

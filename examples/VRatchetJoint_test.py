@@ -21,9 +21,9 @@ class ConstraintsTest(SpaceScene):
         ratchet_joint = VRatchetJoint(wheel, wheel2, phase=0, ratchet=PI / 4)
     
         # 6. 过滤碰撞，防止组件互相弹飞
-        self.add_shape_filter(center_dot, fixed_dot, wheel, wheel2, group=3)
+        self.add_shapes_filter(center_dot, fixed_dot, wheel, wheel2, group=3)
         # 添加所有约束
-        self.add_constraints_body(wheel_pivot, wheel2_pivot, ratchet_joint)
+        self.add_constraints(wheel_pivot, wheel2_pivot, ratchet_joint)
 
         self.wait(6)
         # self.draw_debug_img()

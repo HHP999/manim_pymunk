@@ -33,9 +33,9 @@ class ConstraintsTest(SpaceScene):
             anchor_b=rod.get_end() - rod.get_center(),
         )
         # 6. 过滤碰撞，防止组件互相弹飞
-        self.add_shape_filter(center_dot, wheel, rod, groove_line, group=3)
+        self.add_shapes_filter(center_dot, wheel, rod, groove_line, group=3)
         # 添加所有约束
-        self.add_constraints_body(wheel_pivot, groove_hinge, vPivot_rod_wheel, vGroove)
+        self.add_constraints(wheel_pivot, groove_hinge, vPivot_rod_wheel, vGroove)
 
         self.wait(6)
         # self.draw_debug_img()
