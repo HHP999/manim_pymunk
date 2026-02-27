@@ -1,6 +1,6 @@
 [project]
 name = "manim-pymunk"
-version = "0.0.1"
+version = "1.1.0"
 description = "A simple Pymunk Visualization Package"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -8,7 +8,7 @@ authors = [
     { name = "CoreKSets", email = "passlink.jack@gmail.com" }
 ]
 dependencies = [
-    "pymunk>=6.0.0",
+    "pymunk>=6.0.0, <7.0.0",
     "manim>=0.18.0",
     "matplotlib>=3.10.0"
 ]

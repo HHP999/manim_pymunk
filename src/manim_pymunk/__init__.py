@@ -1,4 +1,4 @@
-__version__ = "0.0.1"
+__version__ = "1.1.0"
 
 from manim_pymunk.custom_mobjects import *
 from manim_pymunk.constraints import *

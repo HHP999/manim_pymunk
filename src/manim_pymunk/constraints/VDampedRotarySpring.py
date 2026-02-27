@@ -1,9 +1,3 @@
-"""阻尼旋转弹簧约束模块。
-
-该模块实现VDampedRotarySpring类，用于在两个刚体之间创建旋转弹簧约束，
-提供一个目标相对角度，通过弹簧力和阻尼力维持该角度。
-"""
-
 from manim import *
 from typing import Optional
 from manim_pymunk.constraints import VConstraint
@@ -12,18 +6,58 @@ from pymunk.constraints import DampedRotarySpring
 
 
 class VDampedRotarySpring(VConstraint):
-    """两个刚体之间的阻尼旋转弹簧约束。
-    
-    VDampedRotarySpring在两个刚体之间创建一个旋转弹簧连接。当实际相对角度
-    偏离目标角度时，弹簧转矩将其拉回；阻尼转矩则衰减振荡。
-    
-    Attributes:
-        a_mob (Mobject): 第一个连接的Mobject对象。
-        b_mob (Mobject): 第二个连接的Mobject对象。
-        rest_angle (float): 目标相对旋转角（弧度）。
-        stiffness (float): 旋转弹簧的刚度系数。
-        damping (float): 旋转阻尼系数。
-        constraint (pymunk.DampedRotarySpring): 底层Pymunk约束对象。
+    """A rotational spring connection is created between the two rigid bodies.
+    When the actual relative angle deviates from the target angle,
+    the spring torque pulls it back; the damping torque dampens the oscillation.
+
+    Parameters
+    ----------
+    a_mob
+        The first Mobject to be connected. Typically acts as the pivot point or one of the bodies under physical influence.
+    b_mob
+        The second Mobject to be connected. It is linked to `a_mob` via a physical constraint such as a spring or hinge.
+    rest_angle
+        The equilibrium angle (in radians). The target angle between the two objects when the system is at rest and no external forces are applied.
+    stiffness
+        The spring constant (elasticity). A higher value increases the restorative force toward the `rest_angle`, making the spring feel "stiffer."
+    damping
+        The damping coefficient. Used to simulate energy dissipation (like friction or air resistance). Higher values cause oscillations to decay faster.
+    arc_indicator_class
+        The class used to visualize the angle (defaults to `Arc`). If set to `None`, no angular arc will be rendered.
+    arc_indicator_config
+        A dictionary defining the visual style of the arc indicator, including `radius`, `color`, and `stroke_width`.
+    connect_line_class
+        The class used to draw a connecting line between the two objects (e.g., `Line`). Defaults to `None` for no visible connection.
+    connect_line_config
+        A dictionary defining the visual style of the connecting line, such as `color` and `stroke_width`.
+
+    Examples
+    --------
+    .. manim:: VDampedRotarySpringExample
+
+        from manim_pymunk import *
+
+        class VDampedRotarySpringExample(SpaceScene):
+            def construct(self):
+                floor = Line(LEFT * 10, RIGHT * 10).shift(DOWN*2)
+
+                square_1 = Square().next_to(floor, UP)
+                square_2 = Square().move_to(square_1.get_center() + RIGHT * 4)
+
+                constraint = VDampedRotarySpring(
+                    square_1,
+                    square_2,
+                    rest_angle=PI / 4,
+                    stiffness=100,
+                    damping=1,
+                )
+
+                self.add_static_body(floor)
+                self.add_dynamic_body(square_1, square_2)
+                self.add_constraints(constraint)
+
+                self.wait(3)
+
     """
 
     def __init__(
@@ -33,26 +67,12 @@ class VDampedRotarySpring(VConstraint):
         rest_angle: float = 0.0,
         stiffness: float = 10.0,
         damping: float = 1.0,
-        arc_indicator_class: Optional[type] = Arc,
-        arc_indicator_style: dict = {"radius": 0.1, "color": RED, "stroke_width": 4},
-        connect_line_class: Optional[type] = None,
-        connect_line_style: dict = {"color": YELLOW, "stroke_width": 2},
+        arc_indicator_class: Optional[Arc] = Arc,
+        arc_indicator_config: dict = {"radius": 0.1, "color": RED, "stroke_width": 4},
+        connect_line_class: Optional[Line] = None,
+        connect_line_config: dict = {"color": YELLOW, "stroke_width": 2},
         **kwargs,
     ):
-        """初始化阻尼旋转弹簧约束。
-        
-        Args:
-            a_mob (Mobject): 第一个连接的Mobject对象。
-            b_mob (Mobject): 第二个连接的Mobject对象。
-            rest_angle (float, optional): 目标相对角度，默认为0.0。
-            stiffness (float, optional): 旋转弹簧刚度，默认为10.0。
-            damping (float, optional): 旋转阻尼系数，默认为1.0。
-            arc_indicator_class (Optional[type], optional): 弧形指示器的类型，默认为Arc。
-            arc_indicator_style (dict, optional): 弧形指示器的样式配置。
-            connect_line_class (Optional[type], optional): 连接线的类型，默认为None。
-            connect_line_style (dict, optional): 连接线的样式配置。
-            **kwargs: 传递给父类VConstraint的其他参数。
-        """
         super().__init__(**kwargs)
         self.a_mob = a_mob
         self.b_mob = b_mob
@@ -63,9 +83,9 @@ class VDampedRotarySpring(VConstraint):
 
         # 样式配置存储
         self.arc_indicator_class = arc_indicator_class
-        self.arc_indicator_style = arc_indicator_style
+        self.arc_indicator_config = arc_indicator_config
         self.connect_line_class = connect_line_class
-        self.connect_line_style = connect_line_style
+        self.connect_line_config = connect_line_config
 
         # 视觉组件占位
         self.arc_a: Optional[VMobject] = None
@@ -75,13 +95,8 @@ class VDampedRotarySpring(VConstraint):
         self.__check_data()
 
     def __check_data(self):
-        """验证约束参数的合法性。
-        
-        检查两个Mobject是否为None以及是否在同一位置。
-        
-        Raises:
-            ValueError: 如果两个Mobject为None或位置重合且需要绘制连接线。
-        """
+        """Verify the validity of constraint parameters."""
+
         if self.a_mob is None or self.b_mob is None:
             raise ValueError(
                 "Constraints cannot be created without both a_mob and b_mob."
@@ -97,14 +112,8 @@ class VDampedRotarySpring(VConstraint):
                 )
 
     def install(self, space: Space):
-        """安装旋转弹簧约束并初始化视觉组件。
-        
-        Args:
-            space (pymunk.Space): 目标物理空间对象。
-        
-        Raises:
-            ValueError: 如果连接的Mobject没有body属性。
-        """
+        """Initialization of physics and visualization components"""
+
         a_body = getattr(self.a_mob, "body", None)
         b_body = getattr(self.b_mob, "body", None)
 
@@ -122,17 +131,17 @@ class VDampedRotarySpring(VConstraint):
             self.conn_line = self.connect_line_class(
                 self.a_mob.get_center(),
                 self.b_mob.get_center(),
-                **self.connect_line_style,
+                **self.connect_line_config,
             )
             self.add(self.conn_line)
 
         # 初始化两个弧形指示器
         if self.arc_indicator_class:
             self.arc_a = self.arc_indicator_class(
-                angle=self.rest_angle, **self.arc_indicator_style
+                angle=self.rest_angle, **self.arc_indicator_config
             )
             self.arc_b = self.arc_indicator_class(
-                angle=self.rest_angle, **self.arc_indicator_style
+                angle=self.rest_angle, **self.arc_indicator_config
             )
             self.add(self.arc_a, self.arc_b)
 
@@ -143,24 +152,16 @@ class VDampedRotarySpring(VConstraint):
         self.add_updater(self.mob_updater)
 
     def mob_updater(self, mob, dt):
-        """实时同步旋转状态与视觉表现。
-        
-        根据两个刚体的实时位置和旋转角度，更新弧形指示器和连接线。
-        
-        Args:
-            mob (Mobject): 约束对象本身。
-            dt (float): 帧时间增量（秒）。
-        """
+        """Visual control updater"""
+
         if not self.constraint:
             return
-        
-        # 直线更新
+
         if self.conn_line:
             self.conn_line.put_start_and_end_on(
                 self.a_mob.get_center(), self.b_mob.get_center()
             )
-            
-        # 1. 获取物理状态
+
         body_a = self.constraint.a
         body_b = self.constraint.b
 
@@ -188,7 +189,7 @@ class VDampedRotarySpring(VConstraint):
 
         if self.arc_a:
             new_arc_a = self.arc_indicator_class(
-                angle=display_angle, **self.arc_indicator_style
+                angle=display_angle, **self.arc_indicator_config
             )
             target_pos_a = pos_a - unit_vec * (self.a_mob.get_width() / 2 + buff)
             new_arc_a.move_to(target_pos_a)
@@ -199,7 +200,7 @@ class VDampedRotarySpring(VConstraint):
 
         if self.arc_b:
             new_arc_b = self.arc_indicator_class(
-                angle=-display_angle, **self.arc_indicator_style
+                angle=-display_angle, **self.arc_indicator_config
             )
             target_pos_b = pos_b + unit_vec * (self.b_mob.get_width() / 2 + buff)
             new_arc_b.move_to(target_pos_b)

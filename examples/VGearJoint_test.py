@@ -2,49 +2,31 @@ from manim import *
 from manim_pymunk import *
 
 
-class ConstraintsTest(SpaceScene):
+class VGearJointExample(SpaceScene):
     def construct(self):
-        # 1. 配置静态地面
-        ground = Line(LEFT * 5 + DOWN * 2, RIGHT * 5 + DOWN * 3)
-        self.add_static_body(ground)
+        floor = Line(LEFT * 10, RIGHT * 10).shift(DOWN * 2)
 
-        static_anchor = Dot(UP * 3 + LEFT * 3, color=YELLOW)
+        static_dot1 = Dot(UP * 2)
+        static_dot2 = Dot(UP * 2 + RIGHT * 4)
 
-        static_anchor_square = Square(side_length=1).shift(UP)
-        dot1 = Dot(static_anchor_square.get_corner(DR), radius=0.3, color=YELLOW)
-        dot1.add(Line(dot1.get_center(), dot1.get_top(), color=BLUE, stroke_width=10))
+        square_1 = Square().move_to(static_dot1)
+        square_2 = Square().move_to(static_dot2)
 
-        dot2 =Gear(radius=0.5).set_color(RED).move_to(static_anchor_square.get_corner(UL))
+        constraints = [
+            VGearJoint(
+                square_1,
+                square_2,
+                phase=0,
+                ratio=4,
+            ),
+            VPinJoint(static_dot1, square_1),
+            VPinJoint(static_dot2, square_2),
+        ]
 
-        self.add_static_body(static_anchor)
-        self.add_dynamic_body(static_anchor_square, dot1, dot2)
+        self.add_static_body(floor, static_dot1, static_dot2)
+        self.add_dynamic_body(square_1, angular_velocity=PI * 2)
+        self.add_dynamic_body(square_2)
 
-        vPinJoint_static_anchor_square = VPinJoint(
-            static_anchor,
-            static_anchor_square,
-            connect_line_class=Line,
-            connect_line_style={"stroke_width": 2, "color": WHITE},
-        )
-
-        vPivotJoint = VPivotJoint(static_anchor_square, dot1, pivot=dot1.get_center())
-        vPivotJoint2 = VPivotJoint(
-            static_anchor_square,
-            dot2,
-            anchor_a=static_anchor_square.get_corner(UL)
-            - static_anchor_square.get_center(),
-            anchor_b=ORIGIN,
-        )
-
-        self.add_shapes_filter(dot1, dot2, static_anchor_square, group=2)
-
-        vGearJoint = VGearJoint(
-            dot1,
-            dot2,
-            phase=PI / 2,
-            ratio=10.0,
-        )
-        dot1.body.angular_velocity = 2 * PI  # 弧度/秒
-        self.add_constraints(
-            vPivotJoint, vPivotJoint2, vPinJoint_static_anchor_square, vGearJoint
-        )
-        self.draw_debug_img()
+        self.add_shapes_filter(static_dot1, static_dot2, square_1, square_2, group=2)
+        self.add_constraints(*constraints)
+        self.wait(3)

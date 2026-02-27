@@ -9,6 +9,12 @@ wheels/
 media/
 _build/
 generated/
+docs/generated/
+docs/_build/
+docs/media/
+docs/reference/
 # Virtual environments
+*.csv
 .venv
 .pypirc
+.vscode

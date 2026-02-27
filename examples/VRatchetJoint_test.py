@@ -2,28 +2,31 @@ from manim import *
 from manim_pymunk import *
 
 
-class ConstraintsTest(SpaceScene):
+class VRatchetJointExample(SpaceScene):
     def construct(self):
-        # 1. 两个固定参考点
-        center_dot = Dot(UP * 2 + RIGHT * 2)
-        fixed_dot = Dot(UP * 0.5 + LEFT * 2, color=RED)
-        # 2. 轮子 (Wheel) - 动态
-        wheel = Circle(radius=0.6, fill_opacity=1, fill_color=RED).move_to(center_dot)
-        wheel2 = Circle(radius=0.6, fill_opacity=1, fill_color=BLUE).move_to(fixed_dot)
-  
+        floor = Line(LEFT * 10, RIGHT * 10).shift(DOWN * 2)
 
-        self.add_dynamic_body(wheel, wheel2)
-        self.add_static_body(center_dot, fixed_dot)
-        wheel.body.angular_velocity = 6
-        wheel_pivot = VPivotJoint(center_dot, wheel, pivot=center_dot.get_center())
-        wheel2_pivot = VPivotJoint(fixed_dot, wheel2, pivot=fixed_dot.get_center())
-        
-        ratchet_joint = VRatchetJoint(wheel, wheel2, phase=0, ratchet=PI / 4)
-    
-        # 6. 过滤碰撞，防止组件互相弹飞
-        self.add_shapes_filter(center_dot, fixed_dot, wheel, wheel2, group=3)
-        # 添加所有约束
-        self.add_constraints(wheel_pivot, wheel2_pivot, ratchet_joint)
+        static_dot1 = Dot(UP * 2)
+        static_dot2 = Dot(UP * 2 + RIGHT * 4)
 
-        self.wait(6)
-        # self.draw_debug_img()
+        square_1 = Square().move_to(static_dot1)
+        square_2 = Square().move_to(static_dot2)
+
+        constraints = [
+            VRatchetJoint(
+                square_1,
+                square_2,
+                phase=PI / 4,
+                ratchet=PI,
+            ),
+            VPinJoint(static_dot1, square_1),
+            VPinJoint(static_dot2, square_2),
+        ]
+
+        self.add_static_body(floor, static_dot1, static_dot2)
+        self.add_dynamic_body(square_1, angular_velocity=PI * 2)
+        self.add_dynamic_body(square_2)
+
+        self.add_shapes_filter(static_dot1, static_dot2, square_1, square_2, group=2)
+        self.add_constraints(*constraints)
+        self.wait(3)

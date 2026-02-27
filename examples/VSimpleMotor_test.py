@@ -2,25 +2,32 @@ from manim import *
 from manim_pymunk import *
 
 
-class ConstraintsTest(SpaceScene):
+class VSimpleMotorExample(SpaceScene):
     def construct(self):
-        # 1. 两个固定参考点
-        center_dot = Dot(ORIGIN)
-        role_dot = Dot(center_dot.get_center(), radius=0.5, color=RED)
-        role_dot.add(
-            Line(start=role_dot.get_center(), end=role_dot.get_top(), color=BLUE)
-        )
 
-        self.add_static_body(center_dot)
-        self.add_dynamic_body(role_dot)
+        static_dot = Dot(ORIGIN)
+        square = Square().move_to(static_dot)
+        square2 = Square().move_to(static_dot.get_center() + UP * 2).scale(0.5)
 
-        self.add_shapes_filter(center_dot, role_dot, group=3)
+        constraints = [
+            VPinJoint(static_dot, square),
+            VPinJoint(
+                square,
+                square2,
+                anchor_a_local=square.get_corner(UR) - square.get_center(),
+                distance=2,
+                connect_line_class=Line,
+            ),
+            VSimpleMotor(
+                static_dot,
+                square,
+                rate=4,
+                max_torque=500,
+            ),
+        ]
 
-        role_pin = VPivotJoint(center_dot, role_dot, pivot=center_dot.get_center())
-        vSimpleMotor = VSimpleMotor(center_dot, role_dot, rate=2)
-
-        # 2. 添加约束
-        self.add_constraints(vSimpleMotor, role_pin)
-
-        self.wait(9)
-        # self.draw_debug_img()
+        self.add_static_body(static_dot)
+        self.add_dynamic_body(square, square2)
+        self.add_shapes_filter(static_dot, square, square2, group=2)
+        self.add_constraints(*constraints)
+        self.wait(3)

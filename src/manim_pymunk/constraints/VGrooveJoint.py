@@ -1,9 +1,3 @@
-"""滑槽关节约束模块。
-
-该模块实现VGrooveJoint类，用于在两个刚体之间创建滑槽约束，
-允许一个刚体沿着另一个刚体上的指定线段滑动。
-"""
-
 from typing import Optional
 from pymunk.constraints import GrooveJoint
 
@@ -13,136 +7,162 @@ from pymunk import Space
 
 
 class VGrooveJoint(VConstraint):
-    """两个刚体之间的滑槽关节约束。
-    
-    VGrooveJoint在Body A上定义一条直线滑槽，Body B上的点被约束在
-    这条滑槽内滑动。Body B可以沿滑槽自由移动，但不能离开滑槽。
-    
-    Attributes:
-        a_mob (Mobject): 定义滑槽的Mobject对象。
-        b_mob (Mobject): 在滑槽内运动的Mobject对象。
-        groove_a_local (tuple): 滑槽起点，a_mob身体坐标系。
-        groove_b_local (tuple): 滑槽终点，a_mob身体坐标系。
-        anchor_b_local (tuple): b_mob身体坐标系中的枢轴点。
-        constraint (pymunk.GrooveJoint): 底层Pymunk约束对象。
-    """
+    """Initializes a Groove Joint constraint between two Mobjects.
+
+    A Groove Joint constrains a point on the second body to a line segment 
+    (the "groove") on the first body. The groove is defined by two points 
+    relative to the first body's center, and the anchor point is relative 
+    to the second body's center.
+
+    Parameters
+    ----------
+    a_mob
+        The Mobject that contains the groove (the rail/track).
+    b_mob
+        The Mobject that contains the sliding anchor (the slider).
+    groove_a_local
+        The start point of the groove, in `a_mob`'s local coordinates.
+    groove_b_local
+        The end point of the groove, in `a_mob`'s local coordinates.
+    anchor_b_local
+        The anchor point on `b_mob` that slides within the groove, in local coordinates.
+    groove_a_appearance
+        Visual Mobject representing the start of the groove.
+    groove_b_appearance
+        Visual Mobject representing the end of the groove.
+    anchor_b_appearance
+        Visual Mobject representing the sliding anchor on the second body.
+    groove_line_class
+        The Manim class used to draw the groove line (e.g., Line or DashedLine).
+    groove_line_config
+        Configuration dictionary for the styling of the groove line.
+
+    Examples
+    --------
+    .. manim:: VGrooveJointExample
+
+        from manim_pymunk import *
+
+        class VGrooveJointExample(SpaceScene):
+            def construct(self):
+
+                static_dot = Dot()
+
+                square_1 = Square().move_to(static_dot)
+                square_2 = Square().move_to(static_dot.get_center() + RIGHT * 4).scale(0.3)
+
+                constraints = [
+                    VGrooveJoint(
+                        square_1,
+                        square_2,
+                        groove_a_local=RIGHT * 2,
+                        groove_b_local=RIGHT * 4,
+                    ),
+                    VPinJoint(static_dot, square_1),
+                ]
+
+                self.add_static_body(static_dot)
+                self.add_dynamic_body(square_1, angular_velocity=PI * 2)
+                self.add_dynamic_body(square_2)
+
+                self.add_shapes_filter(static_dot, square_1, square_2, group=2)
+                self.add_constraints(*constraints)
+                self.wait(6)
+
+    """ 
 
     def __init__(
         self,
         a_mob: Mobject,
         b_mob: Mobject,
-        groove_a: np.ndarray = LEFT,
-        groove_b: np.ndarray = RIGHT,
-        anchor_b: np.ndarray = ORIGIN,
-        groove_color: ManimColor = GREEN,
-        pivot_appearance: Mobject = Dot(color=YELLOW),
-        show_groove: bool = True,
+        groove_a_local: list[float, float, float] = RIGHT,
+        groove_b_local: list[float, float, float] = RIGHT * 2,
+        anchor_b_local: list[float, float, float] = ORIGIN,
+        groove_a_appearance: Mobject = Dot(color=RED),
+        groove_b_appearance: Mobject = Dot(color=RED),
+        anchor_b_appearance: Mobject = Dot(color=GREEN),
+        groove_line_class: Optional[Line] = Line,
+        groove_line_config: dict = {
+            "color": YELLOW,
+            "stroke_width": 2,
+        },
         **kwargs,
     ):
-        """初始化滑槽关节约束。
-        
-        Args:
-            a_mob (Mobject): 定义滑槽的Mobject对象。
-            b_mob (Mobject): 在滑槽内运动的Mobject对象。
-            groove_a (np.ndarray, optional): 滑槽起点，默认为LEFT。
-            groove_b (np.ndarray, optional): 滑槽终点，默认为RIGHT。
-            anchor_b (np.ndarray, optional): b_mob上的枢轴点，默认为ORIGIN。
-            groove_color (ManimColor, optional): 滑槽的颜色，默认为绿色。
-            pivot_appearance (Mobject, optional): 枢轴点的视觉表现，默认为黄色点。
-            show_groove (bool, optional): 是否显示滑槽线，默认为True。
-            **kwargs: 传递给父类VConstraint的其他参数。
-        """
         super().__init__(**kwargs)
         self.a_mob = a_mob
         self.b_mob = b_mob
 
-        # Pymunk local coordinates (x, y)
-        self.groove_a_local = tuple(groove_a[:2])
-        self.groove_b_local = tuple(groove_b[:2])
-        self.anchor_b_local = tuple(anchor_b[:2])
+        self.groove_a_local = groove_a_local
+        self.groove_b_local = groove_b_local
+        self.anchor_b_local = anchor_b_local
 
-        self.pivot_appearance = pivot_appearance
-        self.show_groove = show_groove
+        self.groove_a_appearance = groove_a_appearance
+        self.groove_b_appearance = groove_b_appearance
+        self.anchor_b_appearance = anchor_b_appearance
+        self.groove_line_class = groove_line_class
+        self.groove_line_config = groove_line_config
         self.groove_line = None
+
         self.constraint: Optional[GrooveJoint] = None
-        self.groove_color = groove_color
 
     def install(self, space: Space):
-        """安装滑槽约束并初始化滑槽和枢轴的视觉表现。
-        
-        Args:
-            space (pymunk.Space): 目标物理空间对象。
-        
-        Raises:
-            ValueError: 如果连接的Mobject没有body属性。
-        """
+        """Verify the validity of constraint parameters."""
         a_body = getattr(self.a_mob, "body", None)
         b_body = getattr(self.b_mob, "body", None)
 
         if not a_body or not b_body:
             raise ValueError("VGrooveJoint connected objects must have Pymunk bodies.")
 
-        # 1. Create Pymunk GrooveJoint
         self.constraint = GrooveJoint(
             a_body,
             b_body,
-            self.groove_a_local,
-            self.groove_b_local,
-            self.anchor_b_local,
+            tuple(self.groove_a_local[:2]),
+            tuple(self.groove_b_local[:2]),
+            tuple(self.anchor_b_local[:2]),
         )
 
-        # 2. Sync initial visual position
-        ga_world = a_body.local_to_world(self.groove_a_local)
-        gb_world = a_body.local_to_world(self.groove_b_local)
-        p_world = b_body.local_to_world(self.anchor_b_local)
+        groove_a_world = a_body.local_to_world(tuple(self.groove_a_local[:2]))
+        groove_b_world = a_body.local_to_world(tuple(self.groove_b_local[:2]))
+        anchor_b_world = b_body.local_to_world(tuple(self.anchor_b_local[:2]))
 
-        p1 = [ga_world.x, ga_world.y, 0]
-        p2 = [gb_world.x, gb_world.y, 0]
-        pp = [p_world.x, p_world.y, 0]
+        ga = [groove_a_world.x, groove_a_world.y, 0]
+        gb = [groove_b_world.x, groove_b_world.y, 0]
+        ab = [anchor_b_world.x, anchor_b_world.y, 0]
 
-        # Initialize the groove line (the track)
-        if self.show_groove:
-            self.groove_line = Line(p1, p2, color=self.groove_color, stroke_width=2)
-        else:
-            self.groove_line = VMobject()
+        if self.groove_line_class:
+            self.groove_line = self.groove_line_class(ga, gb, **self.groove_line_config)
+            self.add(self.groove_line)
 
-        self.pivot_appearance.move_to(pp)
+        self.groove_a_appearance.move_to(ga)
+        self.groove_b_appearance.move_to(gb)
+        self.anchor_b_appearance.move_to(ab)
 
-        # Add to VConstraint
-        self.add(self.groove_line, self.pivot_appearance)
+        self.add(
+            self.groove_a_appearance, self.groove_b_appearance, self.anchor_b_appearance
+        )
 
-        # 3. Inject into Pymunk space
         space.add(self.constraint)
-
-        # 4. Bind real-time updater
         self.add_updater(self.mob_updater)
 
     def mob_updater(self, mob, dt):
-        """实时同步滑槽与枢轴的视觉表现。
-        
-        根据物理引擎的计算结果，更新滑槽线和枢轴点的位置。
-        
-        Args:
-            mob (Mobject): 约束对象本身。
-            dt (float): 帧时间增量（秒）。
-        """
+        """Visual control updater"""
         if not self.constraint:
             return
 
-        # Body A defines the groove track
-        wa_start = self.constraint.a.local_to_world(self.constraint.groove_a)
-        wa_end = self.constraint.a.local_to_world(self.constraint.groove_b)
+        a_body = self.constraint.a
+        b_body = self.constraint.b
+        # 2. Sync initial visual position
+        groove_a_world = a_body.local_to_world(tuple(self.groove_a_local[:2]))
+        groove_b_world = a_body.local_to_world(tuple(self.groove_b_local[:2]))
+        anchor_b_world = b_body.local_to_world(tuple(self.anchor_b_local[:2]))
 
-        # Body B defines the pivot point
-        wb_pivot = self.constraint.b.local_to_world(self.constraint.anchor_b)
+        ga = [groove_a_world.x, groove_a_world.y, 0]
+        gb = [groove_b_world.x, groove_b_world.y, 0]
+        ab = [anchor_b_world.x, anchor_b_world.y, 0]
 
-        p1 = [wa_start.x, wa_start.y, 0]
-        p2 = [wa_end.x, wa_end.y, 0]
-        pp = [wb_pivot.x, wb_pivot.y, 0]
+        self.groove_a_appearance.move_to(ga)
+        self.groove_b_appearance.move_to(gb)
+        self.anchor_b_appearance.move_to(ab)
 
-        # Update the pivot point position
-        self.pivot_appearance.move_to(pp)
-
-        # Update the groove line (it moves and rotates with Body A)
-        if self.show_groove and isinstance(self.groove_line, Line):
-            self.groove_line.put_start_and_end_on(p1, p2)
+        if isinstance(self.groove_line, Line):
+            self.groove_line.put_start_and_end_on(ga, gb)

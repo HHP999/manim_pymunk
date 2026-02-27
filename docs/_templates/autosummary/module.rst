@@ -1,17 +1,23 @@
-{{ fullname | escape | underline }}
+{{ name | escape | underline }}
+
+.. currentmodule:: {{ fullname }}
 
 .. automodule:: {{ fullname }}
 
-   .. rubric:: {{ _('Summary') }}
+   {# SEE manim.utils.docbuild.autoaliasattr_directive #}
+   {# FOR INFORMATION ABOUT THE CUSTOM autoaliasattr DIRECTIVE! #}
+   .. autoaliasattr:: {{ fullname }}
 
-   {% block attributes %}
-   {% if attributes %}
-   .. rubric:: {{ _('Attributes') }}
+   {% block classes %}
+   {% if classes %}
+   .. rubric:: Classes
 
    .. autosummary::
-   {% for item in attributes %}
-      {{ item }}
-   {%- endfor %}
+      :toctree: .
+      :nosignatures:
+      {% for class in classes %}
+        {{ class }}
+      {% endfor %}
    {% endif %}
    {% endblock %}
 
@@ -19,22 +25,8 @@
    {% if functions %}
    .. rubric:: {{ _('Functions') }}
 
-   .. autosummary::
    {% for item in functions %}
-      {{ item }}
-   {%- endfor %}
-   {% endif %}
-   {% endblock %}
-
-   {% block classes %}
-   {% if classes %}
-   .. rubric:: {{ _('Classes') }}
-
-   .. autosummary::
-      :toctree:
-      :template: autosummary/class.rst
-   {% for item in classes %}
-      {{ item }}
+   .. autofunction:: {{ item }}
    {%- endfor %}
    {% endif %}
    {% endblock %}

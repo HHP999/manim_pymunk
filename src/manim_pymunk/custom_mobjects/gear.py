@@ -52,9 +52,3 @@ class Gear(VMobject):
             res = Exclusion(res, hole)
         
         self.set_points(res.get_points())
-
-class Test(Scene):
-    def construct(self):
-        # 实例化对象并添加
-        gear = Gear()
-        self.add(gear)
