@@ -42,41 +42,57 @@ class VSpace(Mobject, metaclass=ConvertToOpenGL):
 
         class VSpaceExample(SpaceScene):
             def construct(self):
-
                 COLLISION_TYPE = 123
-                floor = Line(start=LEFT * 2, end=RIGHT * 10, stroke_width=12, color=RED)
+                # 1. 地板
+                floor = Line(start=LEFT * 5, end=RIGHT * 5, stroke_width=12, color=BLUE)
                 floor.to_edge(DOWN, buff=0.1)
                 self.add_static_body(floor)
-                self.vspace._set_collision_type(floor, COLLISION_TYPE)
 
-                stone_num = 40
-
-                stone_temp = Dot(ORIGIN, color=BLUE)
-                for _ in range(stone_num):
-                    stone = stone_temp.copy().move_to(
-                        random.randint(1, 6) * UP + random.randint(-4, 4) * RIGHT
+                # 2. 生成石头
+                stone_num = 15
+                stones = [
+                    Dot(color=BLUE).move_to(
+                        random.uniform(1, 3) * UP + random.uniform(-2, 2) * RIGHT
                     )
-                    self.add_dynamic_body(stone)
-                    self.vspace._set_collision_type(stone, COLLISION_TYPE)
+                    for _ in range(stone_num)
+                ]
+                self.add_dynamic_body(*stones)
+
+                self.set_collision_type(floor, *stones, collision_type=COLLISION_TYPE)
 
                 def post_solve_callback(arbiter, space, data):
-                    # 1. 获取总冲量向量
-                    impulse = arbiter.total_impulse
-                    strength = impulse.length
-                    print(strength)
-                    if strength > 0.1:
-                        self.add_sound(
-                            "../../../../examples/assets/click.wav",
-                        )
+                    # 测试获取碰撞瞬间的冲量长度
+                    if arbiter.total_impulse.length > 0.2:
+                        print(f"Impact Strength: {arbiter.total_impulse.length:.2f}")
                     return True
 
-                self.vspace._collision_detection_handler(
+                self.set_collision_detection_handler(
                     collision_type_a=COLLISION_TYPE,
                     collision_type_b=COLLISION_TYPE,
                     post_solve=post_solve_callback,
                 )
 
-                self.wait(3)
+                self.apply_impulse_at_local_point(*stones, impulse=(0, 0.1, 0))
+
+                self.apply_force_at_world_point(stones[0], force=(0.1, 0, 0))
+
+                start_pt = (0, 2, 0)
+                end_pt = (0, -7, 0)
+                self.add(Line(start_pt, end_pt, color=RED))
+
+                self.wait(1.5)
+
+                results = self.get_line_query(floor, start_pt, end_pt, stroke_width=0.1)
+
+                if results:
+                    hit_point = results[0][2]  # 获取碰撞点坐标
+                    print(f"Floor detected at: {hit_point}")
+                    # 在探测到的位置画一个临时的红圈验证
+                    self.add(Dot(hit_point, color=YELLOW, radius=0.1))
+
+                final_vel = self.get_velocity_at_local_point(stones[-1])
+                print(f"Last stone velocity: {final_vel}")
+                self.wait(1)
 
     """
 
@@ -396,7 +412,6 @@ class VSpace(Mobject, metaclass=ConvertToOpenGL):
         pymunk.CollisionHandler
             The registered collision handler object.
         """
-        print(type(self.space))
         handler = self.space.add_collision_handler(collision_type_a, collision_type_b)
 
         if begin:
@@ -909,6 +924,31 @@ class VSpace(Mobject, metaclass=ConvertToOpenGL):
     def get_point_query_info(
         mob: Mobject, point: Tuple[float, float, float] = (0, 0, 0)
     ) -> list:
+        """Performs a spatial query to find the relationship between a point and a Mobject's shapes.
+
+        This method calculates how a specific point in space relates to the physical
+        boundaries of a Mobject. It is essential for determining if a point is inside
+        an object, how far it is from the surface, and the direction to the
+        closest surface point.
+
+        Parameters
+        ----------
+        mob
+            The Mobject whose associated physical shapes will be queried.
+        point
+            A (x, y, z) coordinate representing the test location in the scene.
+            Note: Only the (x, y) components are used for the 2D physics engine.
+
+        Returns
+        -------
+        query_info_list
+            A list of tuples, where each tuple contains:
+            - distance: The distance from the point to the shape (negative if inside).
+            - gradient: A 3D vector representing the direction of the distance gradient.
+            - point: The closest point on the shape's surface to the query point.
+            - shape: The specific pymunk.Shape object that was queried.
+        """
+
         query_info_list = []
         for shape in mob.shapes:
             point_query_info = shape.point_query(point[:2])
@@ -929,6 +969,34 @@ class VSpace(Mobject, metaclass=ConvertToOpenGL):
         end: Tuple[float, float, float],
         stroke_width: float,
     ) -> list:
+        """Performs a segment query to detect intersections between a line and a Mobject's shapes.
+
+        This method simulates a 'laser beam' or thick line segment traveling from
+        'start' to 'end'. It identifies if and where this segment pierces the
+        Mobject's physical boundaries, considering the segment's thickness.
+
+        Parameters
+        ----------
+        mob
+            The Mobject whose associated physical shapes will be checked for intersection.
+        start
+            The (x, y, z) starting point of the query segment.
+        end
+            The (x, y, z) ending point of the query segment.
+        stroke_width
+            The radius of the query segment. Effectively makes the 'laser' a
+            thick cylinder/capsule for detection.
+
+        Returns
+        -------
+        query_info_list
+            A list of tuples containing intersection data:
+            - alpha: A float (0.0 to 1.0) representing the normalized distance
+              along the segment where the hit occurred.
+            - normal: A 3D vector representing the surface normal at the impact point.
+            - point: The exact 3D coordinate of the intersection point.
+            - shape: The specific pymunk.Shape that was hit.
+        """
         query_info_list = []
         for shape in mob.shapes:
             line_query_info = shape.segment_query(
@@ -946,6 +1014,31 @@ class VSpace(Mobject, metaclass=ConvertToOpenGL):
 
     @staticmethod
     def get_shapea_shapeb_info(shape_a: pymunk.Shape, shape_b: pymunk.Shape) -> list:
+        """Retrieves detailed contact information between two specific physical shapes.
+
+        This method performs a low-level collision query to find the 'contact manifold' 
+        between two shapes. It calculates the collision normal and the set of points 
+        where the two shapes are touching or overlapping.
+
+        Parameters
+        ----------
+        shape_a
+            The first pymunk.Shape to check for collision.
+        shape_b
+            The second pymunk.Shape to check for collision.
+
+        Returns
+        -------
+        contact_data
+            A list where the first element is the collision normal, followed by 
+            tuples of contact point details:
+            - normal: A 3D vector representing the direction required to resolve 
+              the collision (from shape_a to shape_b).
+            - point_a: The coordinate on the surface of shape_a involved in the contact.
+            - point_b: The coordinate on the surface of shape_b involved in the contact.
+            - distance: The penetration depth (negative if overlapping, positive if 
+              separated within the collision margin).
+        """
         contactPointSet = shape_a.shapes_collide(shape_b)
         normal = [*contactPointSet.normal, 0]
         contactPoints = contactPointSet.points

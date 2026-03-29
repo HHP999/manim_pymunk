@@ -1,7 +1,7 @@
 from manim import *
 from manim_pymunk.constraints.constraint import VConstraint
 import pymunk
-from typing import Tuple
+from typing import Any, Callable, Dict, Tuple
 from manim.mobject.mobject import Mobject
 
 from manim_pymunk.space import VSpace
@@ -678,3 +678,145 @@ class SpaceScene(ZoomedScene):
             return mob.shapes
         else:
             raise RuntimeError("Please add 'mobject' to the space first!")
+
+    # collision ID setter
+    def set_collision_type(self, *mobs: Mobject, collision_type: int = 4):
+        for mob in mobs:
+            self.vspace._set_collision_type(mob, collision_type)
+
+    # collision detection handlser setter
+    def set_wildcard_collision_handler(
+        self,
+        collision_type_a: int,
+        begin: Callable[[pymunk.Arbiter, pymunk.Space, Dict], bool] = None,
+        pre_solve: Callable[[pymunk.Arbiter, pymunk.Space, Dict], bool] = None,
+        post_solve: Callable[[pymunk.Arbiter, pymunk.Space, Dict], None] = None,
+        separate: Callable[[pymunk.Arbiter, pymunk.Space, Dict], None] = None,
+        data: Dict[Any, Any] = None,
+    ):
+        self.vspace._wildcard_collision_handler(
+            collision_type_a, begin, pre_solve, post_solve, separate, data
+        )
+
+    def set_collision_detection_handler(
+        self,
+        collision_type_a: int,
+        collision_type_b: int,
+        begin: Callable[[pymunk.Arbiter, pymunk.Space, Dict], bool] = None,
+        pre_solve: Callable[[pymunk.Arbiter, pymunk.Space, Dict], bool] = None,
+        post_solve: Callable[[pymunk.Arbiter, pymunk.Space, Dict], None] = None,
+        separate: Callable[[pymunk.Arbiter, pymunk.Space, Dict], None] = None,
+        data: Dict[Any, Any] = None,
+    ):
+        self.vspace._collision_detection_handler(
+            collision_type_a,
+            collision_type_b,
+            begin,
+            pre_solve,
+            post_solve,
+            separate,
+            data,
+        )
+
+    # force setter
+    def apply_force_at_local_point(
+        self,
+        *mobs: Mobject,
+        force: Tuple[float, float, float],
+        point: Tuple[float, float, float] = (0, 0, 0),
+    ):
+        for mob in mobs:
+            self.vspace.apply_force_at_local_point(mob, force, point)
+
+    def apply_force_at_world_point(
+        self,
+        *mobs: Mobject,
+        force: Tuple[float, float, float],
+        point: Tuple[float, float, float] = (0, 0, 0),
+    ):
+        for mob in mobs:
+            self.vspace.apply_force_at_world_point(mob, force, point)
+
+    # impulse setter
+    def apply_impulse_at_local_point(
+        self,
+        *mobs: Mobject,
+        impulse: Tuple[float, float, float],
+        point: Tuple[float, float, float] = (0, 0, 0),
+    ) -> None:
+        for mob in mobs:
+            self.vspace.apply_impulse_at_local_point(mob, impulse, point)
+
+    def apply_impulse_at_world_point(
+        self,
+        *mobs: Mobject,
+        impulse: Tuple[float, float, float],
+        point: Tuple[float, float, float] = (0, 0, 0),
+    ) -> None:
+        for mob in mobs:
+            self.vspace.apply_impulse_at_world_point(mob, impulse, point)
+
+    # pos utils
+    def local_to_world(
+        self, mob: Mobject, point: Tuple[float, float, float] = (0, 0, 0)
+    ):
+        self.vspace.local_to_world(mob, point)
+
+    def world_to_local(
+        self, mob: Mobject, point: Tuple[float, float, float] = (0, 0, 0)
+    ):
+        self.vspace.world_to_local(mob, point)
+
+    # custom positon | velocity
+    def set_position_func(
+        self, *mobs: Mobject, callback: Callable[[pymunk.Body, float], None] = None
+    ):
+        for mob in mobs:
+            self.vspace.set_position_func(mob, callback)
+
+    def set_velocity_func(
+        self,
+        *mobs: Mobject,
+        callback: Callable[
+            [pymunk.Body, tuple[float, float], float, float], None
+        ] = None,
+    ):
+        for mob in mobs:
+            self.vspace.set_velocity_func(mob, callback)
+
+    # get velocity info
+    def get_velocity_at_local_point(
+        self, mob: Mobject, point: Tuple[float, float, float] = (0, 0, 0)
+    )-> Tuple[float, float, float]:
+        return self.vspace.velocity_at_local_point(mob, point)
+
+    def velocity_at_world_point(
+        self, mob: Mobject, point: Tuple[float, float, float] = (0, 0, 0)
+    )-> Tuple[float, float, float]:
+        return self.vspace.velocity_at_world_point(mob, point)
+
+    # get point info
+    def get_point_query_info(
+        self, mob: Mobject, point: Tuple[float, float, float] = (0, 0, 0)
+    ) -> list:
+        return self.vspace.get_point_query_info(
+            mob,
+            point,
+        )
+
+    def get_line_query(
+        self,
+        mob: Mobject,
+        start: Tuple[float, float, float],
+        end: Tuple[float, float, float],
+        stroke_width: float,
+    ) -> list:
+        return self.vspace.get_line_query(mob, start, end, stroke_width)
+
+    def get_shapea_shapeb_info(
+        self, shape_a: pymunk.Shape, shape_b: pymunk.Shape
+    ) -> list:
+        return self.vspace.get_shapea_shapeb_info(
+            shape_a,
+            shape_b,
+        )

@@ -1,6 +1,6 @@
 [project]
 name = "manim-pymunk"
-version = "1.1.0"
+version = "1.2.0"
 description = "A simple Pymunk Visualization Package"
 readme = "README.md"
 requires-python = ">=3.11"
